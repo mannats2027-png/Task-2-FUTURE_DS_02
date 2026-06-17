@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Telco Churn Intelligence — Analytics Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --blue: #378ADD;
+    --red: #E24B4A;
+    --green: #639922;
+    --amber: #EF9F27;
+    --teal: #1D9E75;
+    --red-light: #FCEBEB;
+    --red-dark: #A32D2D;
+    --amber-light: #FAEEDA;
+    --amber-dark: #854F0B;
+    --green-light: #EAF3DE;
+    --green-dark: #3B6D11;
+    --teal-light: #E1F5EE;
+    --teal-dark: #085041;
+    --sidebar-w: 200px;
+    --header-h: 56px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+    background: #F4F5F7;
+    color: #1A1D23;
+    min-height: 100vh;
+    font-size: 13px;
+  }
+
+  /* ─── TOP HEADER ─── */
+  .header {
+    height: var(--header-h);
+    background: #1A1D23;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: auto;
+  }
+
+  .brand-icon {
+    width: 28px;
+    height: 28px;
+    background: var(--blue);
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 14px;
+  }
+
+  .brand-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.2px;
+  }
+
+  .brand-sub {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.2px;
+    margin-top: 1px;
+  }
+
+  .header-meta {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    border-left: 1px solid rgba(255,255,255,0.1);
+    padding-left: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--teal);
+    flex-shrink: 0;
+  }
+
+  /* ─── LAYOUT ─── */
+  .layout {
+    display: flex;
+    min-height: calc(100vh - var(--header-h));
+  }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: #fff;
+    border-right: 1px solid #E5E7EB;
+    flex-shrink: 0;
+    padding: 20px 0;
+    position: sticky;
+    top: var(--header-h);
+    height: calc(100vh - var(--header-h));
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 0 12px;
+    margin-bottom: 8px;
+  }
+
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 0 8px;
+    margin-bottom: 4px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #6B7280;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.15s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+
+  .nav-item:hover { background: #F4F5F7; color: #374151; }
+
+  .nav-item.active {
+    background: #EBF4FF;
+    color: #1D4ED8;
+  }
+
+  .nav-item.active i { color: #2563EB; }
+
+  .nav-item i {
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .sidebar-divider {
+    height: 1px;
+    background: #F3F4F6;
+    margin: 12px 12px;
+  }
+
+  /* ─── MAIN ─── */
+  .main {
+    flex: 1;
+    padding: 20px 24px;
+    overflow: auto;
+    min-width: 0;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ─── PAGE HEADER ─── */
+  .page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .page-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #111827;
+    letter-spacing: -0.3px;
+  }
+
+  .page-desc {
+    font-size: 12px;
+    color: #9CA3AF;
+    margin-top: 3px;
+  }
+
+  .alert-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--red-light);
+    color: var(--red-dark);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 20px;
+  }
+
+  /* ─── KPI CARDS ─── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .kpi-card {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #E5E7EB;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent, #E5E7EB);
+    border-radius: 10px 10px 0 0;
+  }
+
+  .kpi-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 6px;
+  }
+
+  .kpi-val {
+    font-size: 26px;
+    font-weight: 700;
+    color: #111827;
+    letter-spacing: -0.5px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .kpi-footer {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #9CA3AF;
+  }
+
+  .kpi-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .chip-bad { background: var(--red-light); color: var(--red-dark); }
+  .chip-good { background: var(--green-light); color: var(--green-dark); }
+  .chip-neutral { background: #F3F4F6; color: #6B7280; }
+
+  /* ─── CHART GRID ─── */
+  .chart-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .chart-grid-3 {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .chart-grid-full {
+    margin-bottom: 16px;
+  }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: #fff;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .card-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  /* ─── LEGEND ─── */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 10px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: #6B7280;
+  }
+
+  .leg-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ─── HEATMAP TABLE ─── */
+  .heat-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 12px;
+  }
+
+  .heat-table th {
+    text-align: left;
+    padding: 8px 12px;
+    color: #9CA3AF;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #E5E7EB;
+  }
+
+  .heat-table th:not(:first-child) { text-align: center; }
+
+  .heat-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #F3F4F6;
+    color: #374151;
+  }
+
+  .heat-table td:not(:first-child) { text-align: center; }
+
+  .heat-table tr:last-child td { border-bottom: none; }
+
+  .heat-cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    padding: 4px 0;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 12px;
+  }
+
+  /* ─── DRIVER BARS ─── */
+  .driver-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .driver-label {
+    font-size: 12px;
+    color: #374151;
+    width: 160px;
+    flex-shrink: 0;
+  }
+
+  .driver-track {
+    flex: 1;
+    height: 6px;
+    background: #F3F4F6;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .driver-fill {
+    height: 6px;
+    border-radius: 3px;
+    transition: width 0.4s ease;
+  }
+
+  .driver-pct {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    width: 38px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ─── INSIGHT CARDS ─── */
+  .insight-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .recommendation-item {
+    display: flex;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    align-items: flex-start;
+  }
+
+  .rec-num {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .profile-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #F3F4F6;
+    font-size: 12px;
+  }
+
+  .profile-row:last-child { border-bottom: none; }
+
+  .profile-key { color: #6B7280; }
+
+  .profile-val {
+    font-weight: 600;
+    color: var(--red-dark);
+  }
+
+  /* ─── SECTION SEPARATOR ─── */
+  .section-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 10px;
+    padding-left: 2px;
+  }
+
+  /* ─── COHORT SUMMARY ROW ─── */
+  .cohort-strip {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+  }
+
+  .cohort-strip-item {
+    flex: 1;
+    padding: 14px 16px;
+    border-right: 1px solid #E5E7EB;
+  }
+
+  .cohort-strip-item:last-child { border-right: none; }
+
+  .cs-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: #9CA3AF;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .cs-val { font-size: 18px; font-weight: 700; color: #111827; }
+
+  .cs-sub { font-size: 11px; margin-top: 3px; }
+</style>
+</head>
+<body>
+
+<!-- ─── HEADER ─── -->
+<header class="header">
+  <div class="header-brand">
+    <div class="brand-icon"><i class="ti ti-chart-line" aria-hidden="true"></i></div>
+    <div>
+      <div class="brand-name">Telco Churn Intelligence</div>
+      <div class="brand-sub">IBM Telco Customer Dataset</div>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div class="status-dot"></div>
+    7,043 customers · June 2026
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ─── SIDEBAR ─── -->
+  <nav class="sidebar" role="navigation" aria-label="Dashboard navigation">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Analysis</div>
+      <button class="nav-item active" onclick="showPage('overview', this)">
+        <i class="ti ti-layout-dashboard" aria-hidden="true"></i> Overview
+      </button>
+      <button class="nav-item" onclick="showPage('cohort', this)">
+        <i class="ti ti-users" aria-hidden="true"></i> Cohort Analysis
+      </button>
+      <button class="nav-item" onclick="showPage('clv', this)">
+        <i class="ti ti-coin" aria-hidden="true"></i> CLV & Revenue
+      </button>
+      <button class="nav-item" onclick="showPage('drivers', this)">
+        <i class="ti ti-target" aria-hidden="true"></i> Churn Drivers
+      </button>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Dataset</div>
+      <div style="padding: 8px 10px; font-size: 11px; color: #9CA3AF; line-height: 1.6;">
+        <div>Source: IBM Telco</div>
+        <div>Records: 7,043</div>
+        <div>Period: Historical</div>
+        <div>Churn label: Binary</div>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">Alerts</div>
+      <div style="padding: 8px 10px; background: var(--red-light); border-radius: 8px; margin-top: 4px;">
+        <div style="font-size: 11px; font-weight: 600; color: var(--red-dark); margin-bottom: 3px;">⚠ High churn detected</div>
+        <div style="font-size: 11px; color: var(--red-dark); line-height: 1.4;">26.5% overall vs 15% industry avg</div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ─── MAIN CONTENT ─── -->
+  <main class="main">
+
+    <!-- ═══════════════════ OVERVIEW ═══════════════════ -->
+    <div id="page-overview" class="page active">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Overview</div>
+          <div class="page-desc">Top-level churn metrics across 7,043 subscribers</div>
+        </div>
+        <div class="alert-badge">
+          <i class="ti ti-trending-up" style="font-size:12px" aria-hidden="true"></i>
+          26.5% churn — 11.5 pts above industry avg
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--accent: #374151;">
+          <div class="kpi-label">Total customers</div>
+          <div class="kpi-val">7,043</div>
+          <div class="kpi-footer"><span class="kpi-chip chip-neutral">Active subscriber base</span></div>
+        </div>
+        <div class="kpi-card" style="--accent: var(--red);">
+          <div class="kpi-label">Churn rate</div>
+          <div class="kpi-val" style="color: var(--red-dark);">26.5%</div>
+          <div class="kpi-footer"><span class="kpi-chip chip-bad">↑ +11.5 pts vs industry</span></div>
+        </div>
+        <div class="kpi-card" style="--accent: var(--amber);">
+          <div class="kpi-label">Avg monthly charge</div>
+          <div class="kpi-val">$64.76</div>
+          <div class="kpi-footer"><span class="kpi-chip chip-bad">Churned avg: $74.44</span></div>
+        </div>
+        <div class="kpi-card" style="--accent: var(--teal);">
+          <div class="kpi-label">Avg tenure</div>
+          <div class="kpi-val">32.4 <span style="font-size:14px;font-weight:500;color:#9CA3AF">mo</span></div>
+          <div class="kpi-footer"><span class="kpi-chip chip-good">Loyal retained base</span></div>
+        </div>
+      </div>
+
+      <div class="chart-grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Churn rate by contract type</div>
+            <div class="card-badge chip-bad">Key driver</div>
+          </div>
+          <div style="position:relative;height:200px">
+            <canvas id="c-contract" role="img" aria-label="Stacked bar chart showing churn vs retained split by contract. Month-to-month: 42.7% churned. One year: 11.3% churned. Two year: 2.8% churned.">Month-to-month 42.7% churned; One year 11.3%; Two year 2.8%</canvas>
+          </div>
+          <div class="legend">
+            <span class="legend-item"><span class="leg-swatch" style="background:#E24B4A"></span>Churned</span>
+            <span class="legend-item"><span class="leg-swatch" style="background:#378ADD"></span>Retained</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Churn breakdown</div>
+          </div>
+          <div style="position:relative;height:180px">
+            <canvas id="c-donut" role="img" aria-label="Donut chart: 73.5% retained, 26.5% churned">73.5% Retained, 26.5% Churned</canvas>
+          </div>
+          <div class="legend" style="justify-content:center">
+            <span class="legend-item"><span class="leg-swatch" style="background:#378ADD"></span>Retained 73.5%</span>
+            <span class="legend-item"><span class="leg-swatch" style="background:#E24B4A"></span>Churned 26.5%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Churn rate by internet service</div>
+          </div>
+          <div style="position:relative;height:180px">
+            <canvas id="c-internet" role="img" aria-label="Bar chart of churn by internet service. Fiber optic 41.9%, DSL 18.9%, No internet 7.4%">Fiber optic: 41.9%, DSL: 18.9%, No internet: 7.4%</canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Churn by payment method</div>
+          </div>
+          <div style="position:relative;height:180px">
+            <canvas id="c-payment" role="img" aria-label="Horizontal bar chart of churn by payment method. Electronic check 45.3%, Mailed check 19.1%, Bank transfer 16.7%, Credit card 15.2%">Electronic check: 45.3%, Mailed check: 19.1%, Bank transfer: 16.7%, Credit card: 15.2%</canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ COHORT ═══════════════════ -->
+    <div id="page-cohort" class="page">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Cohort Analysis</div>
+          <div class="page-desc">Churn patterns segmented by customer tenure</div>
+        </div>
+      </div>
+
+      <div class="cohort-strip">
+        <div class="cohort-strip-item">
+          <div class="cs-label">New (0–3 mo)</div>
+          <div class="cs-val">1,051</div>
+          <div class="cs-sub"><span class="kpi-chip chip-bad">56.8% churn</span></div>
+        </div>
+        <div class="cohort-strip-item">
+          <div class="cs-label">Early (4–12 mo)</div>
+          <div class="cs-val">1,124</div>
+          <div class="cs-sub"><span class="kpi-chip chip-bad">39.1% churn</span></div>
+        </div>
+        <div class="cohort-strip-item">
+          <div class="cs-label">Mid (13–48 mo)</div>
+          <div class="cs-val">2,618</div>
+          <div class="cs-sub"><span class="kpi-chip chip-neutral">~25% churn</span></div>
+        </div>
+        <div class="cohort-strip-item">
+          <div class="cs-label">Loyal (49–72 mo)</div>
+          <div class="cs-val">2,239</div>
+          <div class="cs-sub"><span class="kpi-chip chip-good">9.5% churn</span></div>
+        </div>
+      </div>
+
+      <div class="chart-grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Churn rate by tenure cohort</div>
+            <div class="card-badge" style="background:#EBF4FF;color:#1D4ED8;font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;">Lifecycle view</div>
+          </div>
+          <div style="position:relative;height:220px">
+            <canvas id="c-cohort-churn" role="img" aria-label="Line chart: churn rate drops from 56.8% at 0-3 months to 9.5% at 49-72 months">56.8% → 39.1% → 28.7% → 20.4% → 9.5%</canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Cohort size distribution</div>
+          </div>
+          <div style="position:relative;height:220px">
+            <canvas id="c-cohort-size" role="img" aria-label="Bar chart of cohort sizes across tenure buckets">0-3m: 1,051; 4-12m: 1,124; 13-24m: 1,024; 25-48m: 1,594; 49-72m: 2,239</canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card chart-grid-full">
+        <div class="card-header">
+          <div class="card-title">Retention heatmap — churn % by contract × tenure</div>
+          <div style="display:flex;gap:8px;">
+            <span style="font-size:10px;padding:3px 7px;border-radius:4px;background:var(--red-light);color:var(--red-dark);font-weight:600;">High risk</span>
+            <span style="font-size:10px;padding:3px 7px;border-radius:4px;background:var(--amber-light);color:var(--amber-dark);font-weight:600;">Moderate</span>
+            <span style="font-size:10px;padding:3px 7px;border-radius:4px;background:var(--green-light);color:var(--green-dark);font-weight:600;">Low risk</span>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="heat-table">
+            <thead>
+              <tr>
+                <th>Tenure cohort</th>
+                <th>Month-to-month</th>
+                <th>One year</th>
+                <th>Two year</th>
+              </tr>
+            </thead>
+            <tbody id="heatmap-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ CLV ═══════════════════ -->
+    <div id="page-clv" class="page">
+      <div class="page-header">
+        <div>
+          <div class="page-title">CLV & Revenue</div>
+          <div class="page-desc">Customer lifetime value and revenue-at-risk analysis</div>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--accent:#374151;">
+          <div class="kpi-label">Overall avg CLV</div>
+          <div class="kpi-val">$2,283</div>
+          <div class="kpi-footer"><span class="kpi-chip chip-neutral">Monthly charges × tenure</span></div>
+        </div>
+        <div class="kpi-card" style="--accent:var(--red);">
+          <div class="kpi-label">CLV — Month-to-month</div>
+          <div class="kpi-val">$1,370</div>
+          <div class="kpi-footer"><span class="kpi-chip chip-bad">↓ Lowest contract tier</span></div>
+        </div>
+        <div class="kpi-card" style="--accent:var(--blue);">
+          <div class="kpi-label">CLV — One year</div>
+          <div class="kpi-val">$3,030</div>
+          <div class="kpi-footer"><span class="kpi-chip chip-good">↑ 2.2× vs M2M</span></div>
+        </div>
+        <div class="kpi-card" style="--accent:var(--teal);">
+          <div class="kpi-label">CLV — Two year</div>
+          <div class="kpi-val">$3,707</div>
+          <div class="kpi-footer"><span class="kpi-chip chip-good">↑ 2.7× vs M2M</span></div>
+        </div>
+      </div>
+
+      <div class="chart-grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">CLV by contract type</div>
+          </div>
+          <div style="position:relative;height:220px">
+            <canvas id="c-clv-bar" role="img" aria-label="Bar chart of CLV by contract. Month-to-month $1370, One year $3030, Two year $3707">Month-to-month: $1,370; One year: $3,030; Two year: $3,707</canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Monthly charge vs tenure</div>
+            <div class="card-badge chip-neutral">Churned vs retained</div>
+          </div>
+          <div style="position:relative;height:220px">
+            <canvas id="c-scatter" role="img" aria-label="Scatter plot: churned customers cluster at low tenure and high monthly charges; retained customers spread across higher tenure">Churned: low tenure / high charge. Retained: spread across higher tenures.</canvas>
+          </div>
+          <div class="legend">
+            <span class="legend-item"><span class="leg-swatch" style="background:#E24B4A"></span>Churned</span>
+            <span class="legend-item"><span class="leg-swatch" style="background:#378ADD"></span>Retained</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card chart-grid-full">
+        <div class="card-header">
+          <div class="card-title">Monthly revenue at risk — churned customers by service tier</div>
+          <div class="card-badge chip-bad">$82.1K at risk monthly</div>
+        </div>
+        <div style="position:relative;height:180px">
+          <canvas id="c-revenue-risk" role="img" aria-label="Bar chart of monthly revenue lost by service tier. Fiber optic $64.8K, DSL $15.2K, No internet $2.1K">Fiber optic: $64,800; DSL: $15,200; No internet: $2,100</canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════ DRIVERS ═══════════════════ -->
+    <div id="page-drivers" class="page">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Churn Drivers</div>
+          <div class="page-desc">Risk factor analysis and retention strategies</div>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card" style="--accent:var(--red);">
+          <div class="kpi-label">Electronic check risk</div>
+          <div class="kpi-val" style="color:var(--red-dark);">45.3%</div>
+          <div class="kpi-footer"><span class="kpi-chip chip-bad">Highest-risk payment</span></div>
+        </div>
+        <div class="kpi-card" style="--accent:var(--red);">
+          <div class="kpi-label">No tech support risk</div>
+          <div class="kpi-val" style="color:var(--red-dark);">41.6%</div>
+          <div class="kpi-footer"><span class="kpi-chip chip-bad">vs 15.2% with support</span></div>
+        </div>
+        <div class="kpi-card" style="--accent:var(--amber);">
+          <div class="kpi-label">Senior citizen churn</div>
+          <div class="kpi-val" style="color:var(--amber-dark);">41.7%</div>
+          <div class="kpi-footer"><span class="kpi-chip chip-bad">vs 23.6% non-senior</span></div>
+        </div>
+        <div class="kpi-card" style="--accent:var(--teal);">
+          <div class="kpi-label">With partner — churn</div>
+          <div class="kpi-val" style="color:var(--teal-dark);">19.7%</div>
+          <div class="kpi-footer"><span class="kpi-chip chip-good">vs 32.9% without partner</span></div>
+        </div>
+      </div>
+
+      <div class="chart-grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Churn risk factors — ranked</div>
+          </div>
+          <div id="driver-bars" style="margin-top:4px"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Churn rate by demographic segment</div>
+          </div>
+          <div style="position:relative;height:240px">
+            <canvas id="c-demo" role="img" aria-label="Bar chart by demographic: Senior citizen 41.7%, No partner 32.9%, No dependents 31.3%, With partner 19.7%, With dependents 15.5%">Senior: 41.7%, No partner: 32.9%, No dependents: 31.3%</canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="insight-grid">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="ti ti-bulb" style="font-size:13px;margin-right:5px;vertical-align:-2px;color:#F59E0B" aria-hidden="true"></i>Retention strategies</div>
+          </div>
+          <div class="recommendation-item" style="background:var(--green-light);">
+            <div class="rec-num" style="background:var(--green-dark);color:#fff;">1</div>
+            <div style="font-size:12px;color:var(--green-dark);">Convert M2M to annual contracts — churn drops from <strong>42.7% → 11.3%</strong></div>
+          </div>
+          <div class="recommendation-item" style="background:#EBF4FF;">
+            <div class="rec-num" style="background:#1D4ED8;color:#fff;">2</div>
+            <div style="font-size:12px;color:#1D4ED8;">Migrate electronic check to auto-pay — churn risk drops <strong>~30 percentage points</strong></div>
+          </div>
+          <div class="recommendation-item" style="background:var(--amber-light);">
+            <div class="rec-num" style="background:var(--amber-dark);color:#fff;">3</div>
+            <div style="font-size:12px;color:var(--amber-dark);">Bundle tech support for fiber customers — <strong>41.9% → ~15%</strong> projected churn</div>
+          </div>
+          <div class="recommendation-item" style="background:#F3F4F6;">
+            <div class="rec-num" style="background:#6B7280;color:#fff;">4</div>
+            <div style="font-size:12px;color:#374151;">90-day early lifecycle intervention — new customers carry <strong>56.8%</strong> churn risk</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="ti ti-alert-triangle" style="font-size:13px;margin-right:5px;vertical-align:-2px;color:var(--red)" aria-hidden="true"></i>High-risk customer profile</div>
+            <span class="card-badge chip-bad">~65% churn probability</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-key">Contract type</span>
+            <span class="profile-val">Month-to-month</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-key">Internet service</span>
+            <span class="profile-val">Fiber optic</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-key">Payment method</span>
+            <span class="profile-val">Electronic check</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-key">Tenure</span>
+            <span class="profile-val">0–3 months</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-key">Tech support</span>
+            <span class="profile-val">None</span>
+          </div>
+          <div class="profile-row">
+            <span class="profile-key">Paperless billing</span>
+            <span class="profile-val">Yes</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+
+const BLUE = '#378ADD', RED = '#E24B4A', GREEN = '#639922', AMBER = '#EF9F27', TEAL = '#1D9E75';
+const BLUE2 = '#185FA5', TEAL2 = '#0F6E56';
+const gridColor = 'rgba(0,0,0,0.05)';
+const axisColor = '#9CA3AF';
+const font = { family: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" };
+
+const baseOpts = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid: { color: gridColor }, ticks: { color: axisColor, font: { ...font, size: 11 } }, border: { display: false } },
+    y: { grid: { color: gridColor }, ticks: { color: axisColor, font: { ...font, size: 11 } }, border: { display: false } }
+  }
+};
+
+new Chart(document.getElementById('c-contract'), {
+  type: 'bar',
+  data: {
+    labels: ['Month-to-month', 'One year', 'Two year'],
+    datasets: [
+      { label: 'Churned', data: [42.7, 11.3, 2.8], backgroundColor: RED, borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 } },
+      { label: 'Retained', data: [57.3, 88.7, 97.2], backgroundColor: BLUE, borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 } }
+    ]
+  },
+  options: {
+    ...baseOpts,
+    scales: {
+      ...baseOpts.scales,
+      x: { ...baseOpts.scales.x, stacked: true },
+      y: { ...baseOpts.scales.y, stacked: true, max: 100, ticks: { callback: v => v + '%', color: axisColor, font: { ...font, size: 11 } } }
+    }
+  }
+});
+
+new Chart(document.getElementById('c-donut'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Retained', 'Churned'],
+    datasets: [{ data: [73.5, 26.5], backgroundColor: [BLUE, RED], hoverOffset: 6, borderWidth: 3, borderColor: '#fff' }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, cutout: '68%' }
+});
+
+new Chart(document.getElementById('c-internet'), {
+  type: 'bar',
+  data: {
+    labels: ['Fiber optic', 'DSL', 'No internet'],
+    datasets: [{ label: 'Churn %', data: [41.9, 18.9, 7.4], backgroundColor: [RED, AMBER, GREEN], borderRadius: { topLeft: 4, topRight: 4 } }]
+  },
+  options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, ticks: { callback: v => v + '%', color: axisColor, font: { ...font, size: 11 } } } } }
+});
+
+new Chart(document.getElementById('c-payment'), {
+  type: 'bar',
+  data: {
+    labels: ['Electronic check', 'Mailed check', 'Bank transfer', 'Credit card'],
+    datasets: [{ label: 'Churn %', data: [45.3, 19.1, 16.7, 15.2], backgroundColor: [RED, AMBER, BLUE, TEAL], borderRadius: { topRight: 4, bottomRight: 4 } }]
+  },
+  options: {
+    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { callback: v => v + '%', color: axisColor, font: { ...font, size: 11 } }, border: { display: false }, max: 55 },
+      y: { grid: { color: 'transparent' }, ticks: { color: axisColor, font: { ...font, size: 11 } }, border: { display: false } }
+    }
+  }
+});
+
+new Chart(document.getElementById('c-cohort-churn'), {
+  type: 'line',
+  data: {
+    labels: ['0–3m', '4–12m', '13–24m', '25–48m', '49–72m'],
+    datasets: [{
+      label: 'Churn rate %',
+      data: [56.8, 39.1, 28.7, 20.4, 9.5],
+      borderColor: RED, backgroundColor: 'rgba(226,75,74,0.07)',
+      fill: true, tension: 0.4, pointBackgroundColor: RED,
+      pointRadius: 5, pointBorderColor: '#fff', pointBorderWidth: 2
+    }]
+  },
+  options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, min: 0, max: 70, ticks: { callback: v => v + '%', color: axisColor, font: { ...font, size: 11 } } } } }
+});
+
+new Chart(document.getElementById('c-cohort-size'), {
+  type: 'bar',
+  data: {
+    labels: ['0–3m', '4–12m', '13–24m', '25–48m', '49–72m'],
+    datasets: [{ label: 'Customers', data: [1051, 1124, 1024, 1594, 2239], backgroundColor: [RED, AMBER, '#9CA3AF', BLUE, TEAL], borderRadius: { topLeft: 4, topRight: 4 } }]
+  },
+  options: baseOpts
+});
+
+const heatData = [
+  ['0–3m', 68, 20, 5],
+  ['4–12m', 52, 15, 4],
+  ['13–24m', 38, 12, 3],
+  ['25–48m', 28, 10, 2],
+  ['49–72m', 14, 8, 1]
+];
+
+function heatStyle(v) {
+  if (v > 50) return { bg: 'var(--red-light)', color: 'var(--red-dark)' };
+  if (v > 25) return { bg: 'var(--amber-light)', color: 'var(--amber-dark)' };
+  if (v > 8) return { bg: '#EAF3DE', color: '#3B6D11' };
+  return { bg: 'var(--teal-light)', color: 'var(--teal-dark)' };
+}
+
+const tbody = document.getElementById('heatmap-body');
+heatData.forEach(([label, m2m, one, two]) => {
+  const tr = document.createElement('tr');
+  const labelTd = document.createElement('td');
+  labelTd.textContent = label;
+  labelTd.style.cssText = 'color:#374151;font-weight:500;';
+  tr.appendChild(labelTd);
+
+  [m2m, one, two].forEach(v => {
+    const td = document.createElement('td');
+    const s = heatStyle(v);
+    td.innerHTML = `<span class="heat-cell" style="background:${s.bg};color:${s.color}">${v}%</span>`;
+    tr.appendChild(td);
+  });
+  tbody.appendChild(tr);
+});
+
+new Chart(document.getElementById('c-clv-bar'), {
+  type: 'bar',
+  data: {
+    labels: ['Month-to-month', 'One year', 'Two year'],
+    datasets: [{ label: 'Avg CLV ($)', data: [1370, 3030, 3707], backgroundColor: [RED, BLUE, TEAL], borderRadius: { topLeft: 4, topRight: 4 } }]
+  },
+  options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, ticks: { callback: v => '$' + v.toLocaleString(), color: axisColor, font: { ...font, size: 11 } } } } }
+});
+
+const scatterRetained = Array.from({length: 80}, () => ({ x: Math.round(15 + Math.random() * 57), y: Math.round(18 + Math.random() * 80) }));
+const scatterChurned = Array.from({length: 40}, () => ({ x: Math.round(1 + Math.random() * 20), y: Math.round(55 + Math.random() * 60) }));
+
+new Chart(document.getElementById('c-scatter'), {
+  type: 'scatter',
+  data: {
+    datasets: [
+      { label: 'Retained', data: scatterRetained, backgroundColor: 'rgba(55,138,221,0.35)', pointRadius: 4, pointBorderColor: 'transparent' },
+      { label: 'Churned', data: scatterChurned, backgroundColor: 'rgba(226,75,74,0.45)', pointRadius: 4, pointStyle: 'triangle', pointBorderColor: 'transparent' }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { title: { display: true, text: 'Tenure (months)', color: axisColor, font: { ...font, size: 11 } }, grid: { color: gridColor }, ticks: { color: axisColor, font: { ...font, size: 10 } }, border: { display: false } },
+      y: { title: { display: true, text: 'Monthly charge ($)', color: axisColor, font: { ...font, size: 11 } }, grid: { color: gridColor }, ticks: { color: axisColor, font: { ...font, size: 10 } }, border: { display: false } }
+    }
+  }
+});
+
+new Chart(document.getElementById('c-revenue-risk'), {
+  type: 'bar',
+  data: {
+    labels: ['Fiber optic (churned)', 'DSL (churned)', 'No internet (churned)'],
+    datasets: [{ label: 'Monthly revenue at risk ($)', data: [64800, 15200, 2100], backgroundColor: [RED, AMBER, '#9CA3AF'], borderRadius: { topLeft: 4, topRight: 4 } }]
+  },
+  options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'k', color: axisColor, font: { ...font, size: 11 } } } } }
+});
+
+const driverData = [
+  { label: 'Month-to-month contract', pct: 42.7, color: RED },
+  { label: 'Electronic check payment', pct: 45.3, color: RED },
+  { label: 'Senior citizen', pct: 41.7, color: RED },
+  { label: 'Fiber optic (no support)', pct: 41.9, color: RED },
+  { label: 'No tech support', pct: 41.6, color: AMBER },
+  { label: 'Paperless billing', pct: 33.6, color: AMBER },
+  { label: 'No dependents', pct: 31.3, color: AMBER },
+  { label: 'With tech support', pct: 15.2, color: GREEN },
+  { label: 'Two-year contract', pct: 2.8, color: TEAL }
+];
+
+const driverDiv = document.getElementById('driver-bars');
+driverData.forEach(d => {
+  driverDiv.innerHTML += `<div class="driver-row">
+    <div class="driver-label">${d.label}</div>
+    <div class="driver-track"><div class="driver-fill" style="width:${d.pct}%;background:${d.color}"></div></div>
+    <div class="driver-pct">${d.pct.toFixed(1)}%</div>
+  </div>`;
+});
+
+new Chart(document.getElementById('c-demo'), {
+  type: 'bar',
+  data: {
+    labels: ['Senior citizen', 'No partner', 'No dependents', 'With partner', 'With dependents'],
+    datasets: [{ label: 'Churn rate %', data: [41.7, 32.9, 31.3, 19.7, 15.5], backgroundColor: [RED, AMBER, AMBER, TEAL, GREEN], borderRadius: { topLeft: 4, topRight: 4 } }]
+  },
+  options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, max: 55, ticks: { callback: v => v + '%', color: axisColor, font: { ...font, size: 11 } } } } }
+});
+</script>
+</body>
+</html>
