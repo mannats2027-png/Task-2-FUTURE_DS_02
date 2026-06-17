@@ -58,7 +58,7 @@ Churn Drivers — Ranked risk factor bar chart, demographic segment analysis, hi
 
 # 👩‍💻 Author
 
-Mannat Sharma 
+Mannat Sharma
 
 Aspiring Data Analyst | Open to opportunities
 # 📄 License
